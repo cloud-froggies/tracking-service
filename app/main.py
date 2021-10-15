@@ -1,27 +1,18 @@
-from typing import Optional,List
-
 from fastapi import FastAPI, HTTPException
 from fastapi.logger import logger
 from fastapi.param_functions import Query
 from fastapi.responses import RedirectResponse
 
+from typing import Optional,List
+from pydantic import BaseModel
 import  pymysql
 import os
 import logging 
 import json
-from pydantic import BaseModel
-
 import datetime
 import boto3
 
-# DB_ENDPOINT = os.environ.get('db_endpoint')
-# DB_ADMIN_USER = os.environ.get('db_admin_user')
-# DB_ADMIN_PASSWORD = os.environ.get('db_admin_password')
-# DB_NAME = os.environ.get('db_name')
-
-# AWS_ACCESS_KEY_ID =''
-# AWS_SECRET_ACCESS_KEY=''
-
+# fast api
 app = FastAPI(title='Matching Service',version='0.1')
 gunicorn_logger = logging.getLogger('gunicorn.error')
 logger.handlers = gunicorn_logger.handlers
@@ -32,8 +23,8 @@ if __name__ != "main":
 else:
     logger.setLevel(logging.DEBUG)
 
-    
 
+# pydantic model
 class tQuery(BaseModel):
     query_id:str
     timestamp:str
@@ -56,6 +47,10 @@ class Impression(BaseModel):
     position:int
 
 class Click(BaseModel):
+    query_id:str
+    impression_id:str
+    click_id:str
+    timestamp:str
     publisher_id:int 
     advertiser_id:int 
     advertiser_campaign_id:int 
@@ -66,9 +61,12 @@ class Click(BaseModel):
     publisher_price:float
     position:int
 
+
+# routes
 @app.get("/")
 def read_root():
     return {"Service": "tracking"}
+
 
 @app.post("/query")
 def query(query:tQuery):
@@ -86,12 +84,10 @@ def query(query:tQuery):
         }
     ]
     client = boto3.client('firehose',region_name='us-east-2')
-    
     response = client.put_record_batch(DeliveryStreamName="query", Records=data)
-
     logger.error(response)
-
     return {"Service": "tracking query"}
+
 
 @app.post("/impression")
 async def impression(impression:Impression):
@@ -116,13 +112,10 @@ async def impression(impression:Impression):
         }
     ]
     client = boto3.client('firehose',region_name='us-east-2')
-    
     response = client.put_record_batch(DeliveryStreamName="impression", Records=data)
-
     logger.error(response)
-
-
     return {"Service": "tracking impression"}
+
 
 @app.post("/click")
 async def click(click:Click):
@@ -131,6 +124,10 @@ async def click(click:Click):
     data = [
         {
             "Data":json.dumps({
+                "query_id":impression.query_id,
+                "impression_id":impression.impression_id,
+                "click_id":impression.click_id,
+                "timestamp":impression.timestamp,
                 "publisher_id":click.publisher_id,
                 "advertiser_id":click.advertiser_id,
                 "advertiser_campaign_id":click.advertiser_campaign_id,
@@ -144,10 +141,6 @@ async def click(click:Click):
         }
     ]
     client = boto3.client('firehose',region_name='us-east-2')
-    
     response = client.put_record_batch(DeliveryStreamName="click", Records=data)
-
     logger.error(response)
-
-
     return {"Service": "tracking click"}
