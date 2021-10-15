@@ -70,35 +70,37 @@ class Click(BaseModel):
 def read_root():
     return {"Service": "tracking"}
 
-@app.post("/query")
+@app.post("/tracking/query")
 def query(query:tQuery):
     query_dict = query.dict()
 
-    data = [
-        {
+    data = {
             "Data":json.dumps({
                 "query_id":query.query_id,
                 "timestamp":query.timestamp,
                 "publisher_id":query.publisher_id,
                 "category":query.category,
                 "zip_code":query.zip_code
-            }),
+            })+"\n"
         }
-    ]
+
     client = boto3.client('firehose',region_name='us-east-2')
     
-    response = client.put_record_batch(DeliveryStreamName="query", Records=data)
-
+    
+    response = client.put_record(
+    DeliveryStreamName='query',
+    Record=data
+    )
+    
     logger.error(response)
 
     return {"Service": "tracking query"}
 
-@app.post("/impression")
+@app.post("/tracking/impression")
 async def impression(impression:Impression):
     impression_dict = impression.dict()
 
-    data = [
-        {
+    data = {
             "Data":json.dumps({
                 "query_id":impression.query_id,
                 "impression_id":impression.impression_id,
@@ -112,41 +114,46 @@ async def impression(impression:Impression):
                 "advertiser_price":impression.advertiser_price,
                 "publisher_price":impression.publisher_price,
                 "position":impression.position
-            }),
+            })+"\n"
         }
-    ]
+
     client = boto3.client('firehose',region_name='us-east-2')
     
-    response = client.put_record_batch(DeliveryStreamName="impression", Records=data)
-
+    response = client.put_record(
+    DeliveryStreamName='impression',
+    Record=data
+    )
+    
     logger.error(response)
 
 
     return {"Service": "tracking impression"}
 
-@app.post("/click")
+@app.post("/tracking/click")
 async def click(click:Click):
     click_dict = click.dict()
 
-    data = [
-        {
-            "Data":json.dumps({
-                "publisher_id":click.publisher_id,
-                "advertiser_id":click.advertiser_id,
-                "advertiser_campaign_id":click.advertiser_campaign_id,
-                "category":click.category,
-                "ad_id":click.ad_id,
-                "zip_code":click.zip_code,
-                "advertiser_price":click.advertiser_price,
-                "publisher_price":click.publisher_price,
-                "position":click.position
-            }),
-        }
-    ]
-    client = boto3.client('firehose',region_name='us-east-2')
-    
-    response = client.put_record_batch(DeliveryStreamName="click", Records=data)
+    data = {
+        "Data":json.dumps({
+            "publisher_id":click.publisher_id,
+            "advertiser_id":click.advertiser_id,
+            "advertiser_campaign_id":click.advertiser_campaign_id,
+            "category":click.category,
+            "ad_id":click.ad_id,
+            "zip_code":click.zip_code,
+            "advertiser_price":click.advertiser_price,
+            "publisher_price":click.publisher_price,
+            "position":click.position
+        })+"\n"
+    }
 
+    client = boto3.client('firehose',region_name='us-east-2')
+
+    response = client.put_record(
+    DeliveryStreamName='click',
+    Record=data
+    )
+    
     logger.error(response)
 
 
