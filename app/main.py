@@ -132,10 +132,10 @@ async def click(click:Click):
 
     data = {
         "Data":json.dumps({
-                "query_id":impression.query_id,
-                "impression_id":impression.impression_id,
-                "click_id":impression.click_id,
-                "timestamp":impression.timestamp,
+                "query_id":click.query_id,
+                "impression_id":click.impression_id,
+                "click_id":click.click_id,
+                "timestamp":click.timestamp,
                 "publisher_id":click.publisher_id,
                 "advertiser_id":click.advertiser_id,
                 "advertiser_campaign_id":click.advertiser_campaign_id,
